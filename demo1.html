@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JNTUH CES - Faculty Availability System</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial,sans-serif;
+}
+
+body{
+    background-color:#f4f4f4;
+}
+
+.top-bar{
+    background-color:#00a896;
+    color:white;
+    text-align:center;
+    padding:5px 10px;
+    font-size:12px;
+    display:flex;
+    justify-content:center;
+    gap:20px;
+}
+
+.logo-area{
+    background:white;
+    padding:15px 50px;
+    display:flex;
+    align-items:center;
+}
+
+.logo-area img{
+    height:80px;
+    margin-right:20px;
+}
+
+.logo-area h1{
+    color:#00509e;
+    font-size:24px;
+}
+
+.banner{
+    width:100%;
+    height:300px;
+    background:url('https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1920&q=80') center/cover no-repeat;
+    border-bottom:4px solid #00509e;
+}
+
+.page-info{
+    text-align:center;
+    padding:20px;
+    background:white;
+}
+
+.login-container{
+    display:flex;
+    justify-content:center;
+    gap:30px;
+    padding:40px 20px;
+    flex-wrap:wrap;
+}
+
+.login-card{
+    width:300px;
+    background:white;
+    border-radius:10px;
+    box-shadow:0 4px 8px rgba(0,0,0,0.1);
+    padding-bottom:20px;
+    position:relative;
+}
+
+.card-header{
+    color:white;
+    padding:20px;
+    text-align:right;
+    font-weight:bold;
+}
+
+.admin-theme .card-header{background:linear-gradient(to right,#800080,#c71585);}
+.faculty-theme .card-header{background:linear-gradient(to right,#ff8c00,#ff4500);}
+.student-theme .card-header{background:linear-gradient(to right,#1e90ff,#00bfff);}
+
+.form-group{
+    padding:8px 20px;
+    font-size:13px;
+}
+
+.form-group input{
+    width:100%;
+    padding:6px;
+    margin-top:4px;
+}
+
+.login-btn{
+    margin:10px 20px;
+    padding:6px 15px;
+    border-radius:15px;
+    cursor:pointer;
+}
+
+.student-options{
+    display:none;
+    padding:10px 20px;
+}
+
+.student-options select{
+    width:100%;
+    padding:6px;
+    margin-top:5px;
+}
+
+.view-btn{
+    margin-top:10px;
+    padding:6px;
+    width:100%;
+    cursor:pointer;
+}
+
+.timetable{
+    display:none;
+    margin:30px auto;
+    width:80%;
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 4px 8px rgba(0,0,0,0.1);
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:10px;
+}
+
+table, th, td{
+    border:1px solid #ccc;
+}
+
+th, td{
+    padding:8px;
+    text-align:center;
+}
+
+.footer{
+    background-color:#800080;
+    color:white;
+    text-align:center;
+    padding:15px;
+    margin-top:30px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="top-bar">
+<span>w: jntuhces.ac.in | e: support@jntuhces.ac.in</span>
+<span>CODE: JNTUH CES</span>
+</div>
+
+<div class="logo-area">
+<img src="jntu.png" alt="Logo">
+<h1>JNTUH College of Engineering Sultanpur</h1>
+</div>
+
+<div class="banner"></div>
+
+<div class="page-info">
+<h2>Department-Centric Faculty Timetable & Availability System</h2>
+<p>Real-time updates on faculty availability and schedules.</p>
+</div>
+
+<div class="login-container">
+
+<div class="login-card student-theme">
+<div class="card-header">Student Login</div>
+
+<div class="form-group">
+<label>Roll No :</label>
+<input type="text">
+</div>
+
+<div class="form-group">
+<label>Password :</label>
+<input type="password">
+</div>
+
+<button class="login-btn" onclick="showBranch()">LOGIN</button>
+
+<div class="student-options" id="studentOptions">
+<label><b>Select Branch</b></label>
+<select id="branch" onchange="showYear()">
+<option value="">--Select Branch--</option>
+<option>CSE</option>
+<option>ECE</option>
+<option>EEE</option>
+<option>CSM</option>
+<option>CSC</option>
+<option>CIV</option>
+<option>MEC</option>
+</select>
+
+<div id="yearSection" style="display:none;">
+<label><b>Select Year</b></label>
+<select id="year">
+<option value="">--Select Year--</option>
+<option>1st Year</option>
+<option>2nd Year</option>
+<option>3rd Year</option>
+<option>4th Year</option>
+</select>
+
+<button class="view-btn" onclick="generateTimetable()">View Timetable</button>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Timetable Section -->
+<div class="timetable" id="timetableSection">
+<h3 id="timetableTitle"></h3>
+
+<table>
+<tr>
+<th>Day</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+</tr>
+<tr>
+<td>Monday</td>
+<td>Maths</td>
+<td>Physics</td>
+<td>English</td>
+<td>Lab</td>
+</tr>
+<tr>
+<td>Tuesday</td>
+<td>DBMS</td>
+<td>OS</td>
+<td>CN</td>
+<td>Library</td>
+</tr>
+</table>
+</div>
+
+<div class="footer">
+Copyright © All rights reserved by JNTUH College of Engineering Sultanpur.
+</div>
+
+<script>
+function showBranch(){
+document.getElementById("studentOptions").style.display="block";
+}
+
+function showYear(){
+let branch=document.getElementById("branch").value;
+if(branch!==""){
+document.getElementById("yearSection").style.display="block";
+}
+}
+
+function generateTimetable(){
+let branch=document.getElementById("branch").value;
+let year=document.getElementById("year").value;
+
+if(branch===""||year===""){
+alert("Please select branch and year");
+return;
+}
+
+document.getElementById("timetableTitle").innerText=
+branch+" - "+year+" Timetable";
+
+document.getElementById("timetableSection").style.display="block";
+}
+</script>
+
+</body>
+</html>

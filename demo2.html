@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JNTUH CES - Faculty Availability System</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; font-family:Arial,sans-serif; }
+        body { background-color:#f4f4f4; }
+        
+        /* Header Styles */
+        .top-bar { background-color:#00a896; color:white; text-align:center; padding:5px; font-size:12px; display:flex; justify-content:center; gap:20px; }
+        .logo-area { background:white; padding:15px 50px; display:flex; align-items:center; }
+        .logo-area img { height:80px; width:80px; background-color:#ccc; border-radius:50%; margin-right:20px; display:flex; align-items:center; justify-content:center; font-size:10px; }
+        .logo-area h1 { color:#00509e; font-size:24px; }
+        .banner { width:100%; height:200px; background:url('https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1920&q=80') center/cover; border-bottom:4px solid #00509e; }
+
+        /* Container and Card Logic */
+        .page-step { display: none; } 
+        .active-step { display: flex; flex-direction: column; align-items: center; } 
+        
+        .login-row { display:flex; justify-content:center; gap:30px; padding:40px 20px; flex-wrap:wrap; width: 100%; }
+        
+        .card { 
+            width:300px; background:white; border-radius:10px; 
+            box-shadow:0 4px 8px rgba(0,0,0,0.1); padding-bottom:20px; 
+            margin-bottom: 20px;
+        }
+
+        .card-header { color:white; padding:15px; text-align:right; font-weight:bold; border-radius:10px 10px 0 0; }
+        .admin-theme .card-header { background:linear-gradient(to right,#800080,#c71585); }
+        .faculty-theme .card-header { background:linear-gradient(to right,#ff8c00,#ff4500); }
+        .student-theme .card-header { background:linear-gradient(to right,#1e90ff,#00bfff); }
+
+        .form-group { padding:10px 20px; font-size:13px; }
+        .form-group label { font-weight: bold; display: block; margin-bottom: 5px; }
+        .form-group input, .form-group select { width:100%; padding:10px; border:1px solid #ccc; border-radius:4px; }
+        
+        .btn-container { padding: 0 20px; display: flex; gap: 10px; }
+        .login-btn { flex: 1; padding:10px; border-radius:20px; cursor:pointer; border:none; background:#00509e; color:white; font-weight: bold; }
+        .back-btn { background:#6c757d; }
+        .search-btn { background:#ff8c00; flex: 0.5; }
+
+        /* Timetables */
+        .timetable-box { display:none; margin:30px auto; width:95%; max-width: 1100px; background:white; padding:30px; border-radius:10px; box-shadow:0 4px 8px rgba(0,0,0,0.1); overflow-x: auto; }
+        table { width:100%; border-collapse:collapse; margin-top:10px; font-size: 13px; }
+        th, td { border:1px solid #ccc; padding:10px; text-align:center; transition: 0.3s; }
+        th { background-color: #f8f9fa; font-size: 12px; }
+        
+        /* Break Column Styling */
+        .break-col { background-color: #e9ecef; font-weight: bold; vertical-align: middle; }
+
+        /* Faculty Specific Styles */
+        .faculty-search-area { margin-top: 40px; border-top: 2px dashed #ccc; padding-top: 30px; }
+        .search-wrapper { display: flex; gap: 10px; max-width: 900px; margin: 0 auto; flex-wrap: wrap; justify-content: center; }
+        .search-wrapper input, .search-wrapper select { flex: 1; min-width: 150px; }
+        .faculty-result { display: none; margin-top: 20px; background: #fffaf0; padding: 20px; border-radius: 8px; border: 1px solid #ffe4b5; overflow-x: auto; }
+        .faculty-result table th { background-color: #ffebcd; }
+        
+        /* Highlight Time Search */
+        .highlight-col { background-color: #fff3cd !important; box-shadow: inset 0 0 0 2px #ff9800 !important; font-size: 1.1em; }
+
+        /* Status Colors */
+        .free-period { color: green; font-weight: bold; }
+        .absent-period { color: #d32f2f; font-weight: bold; background-color: #ffebee; display: block; padding: 5px; border-radius: 4px;}
+
+        .footer { background-color:#800080; color:white; text-align:center; padding:15px; margin-top:30px; }
+    </style>
+</head>
+<body>
+
+<div class="top-bar">
+    <span>w: jntuhces.ac.in | e: support@jntuhces.ac.in</span>
+    <span>CODE: JNTUH CES</span>
+</div>
+
+<div class="logo-area">
+    <div><img src="https://via.placeholder.com/80?text=JNTUH" alt="Logo"></div>
+    <h1>JNTUH College of Engineering Sultanpur</h1>
+</div>
+
+<div class="banner"></div>
+
+<div id="step1" class="page-step active-step">
+    <div class="login-row">
+        <div class="card admin-theme">
+            <div class="card-header">Academic Login</div>
+            <div class="form-group"><label>Username</label><input type="text" placeholder="Admin ID"></div>
+            <div class="form-group"><label>Password</label><input type="password" placeholder="••••••••"></div>
+            <div class="btn-container"><button class="login-btn">LOGIN</button></div>
+        </div>
+
+        <div class="card faculty-theme">
+            <div class="card-header">Faculty Login</div>
+            <div class="form-group"><label for="facLoginId">Faculty ID</label><input type="text" id="facLoginId" placeholder="FAC-001"></div>
+            <div class="form-group"><label>Password</label><input type="password" placeholder="••••••••"></div>
+            <div class="btn-container"><button class="login-btn" onclick="facultyLogin()">LOGIN</button></div>
+        </div>
+
+        <div class="card student-theme">
+            <div class="card-header">Student Login</div>
+            <div class="form-group"><label for="rollNo">Roll Number</label><input type="text" id="rollNo" placeholder="21JJ1AXXXX"></div>
+            <div class="form-group"><label for="pass">Password</label><input type="password" id="pass" placeholder="••••••••"></div>
+            <div class="btn-container"><button class="login-btn" onclick="goToStep(2)">LOGIN</button></div>
+        </div>
+    </div>
+</div>
+
+<div id="step2" class="page-step">
+    <div class="card student-theme" style="margin-top: 40px; width: 400px; max-width: 90%;">
+        <div class="card-header">Select Your Branch</div>
+        <div class="form-group">
+            <label for="branch">Department / Branch</label>
+            <select id="branch">
+                <option value="">-- Select Branch --</option>
+                <option value="CSE">CSE</option>
+                <option value="ECE">ECE</option>
+                <option value="CSC">CSC</option>
+                <option value="CSM">CSM</option>
+                <option value="CIV">CIV</option>
+                <option value="MEC">MEC</option>
+            </select>
+        </div>
+        <div class="btn-container">
+            <button class="login-btn back-btn" onclick="goToStep(1)">BACK</button>
+            <button class="login-btn" onclick="goToStep(3)">NEXT</button>
+        </div>
+    </div>
+</div>
+
+<div id="step3" class="page-step">
+    <div class="card student-theme" style="margin-top: 40px; width: 400px; max-width: 90%;">
+        <div class="card-header">Select Academic Year</div>
+        <div class="form-group">
+            <label for="year">Current Year</label>
+            <select id="year">
+                <option value="">-- Select Year --</option>
+                <option value="1st Year">1st Year</option>
+                <option value="2nd Year">2nd Year</option>
+                <option value="3rd Year">3rd Year</option>
+                <option value="4th Year">4th Year</option>
+            </select>
+        </div>
+        <div class="btn-container">
+            <button class="login-btn back-btn" onclick="goToStep(2)">BACK</button>
+            <button class="login-btn" onclick="viewTimetable()">VIEW TIMETABLE</button>
+        </div>
+    </div>
+</div>
+
+<div class="timetable-box" id="studentTimetableSection">
+    <h3 id="timetableTitle" style="text-align:center; color:#00509e; margin-bottom: 15px;"></h3>
+    
+    <table id="dynamicTimetable">
+        </table>
+
+    <div class="faculty-search-area">
+        <h3 style="text-align:center; color:#ff8c00; margin-bottom: 15px;">Search Faculty Availability</h3>
+        
+        <div class="form-group search-wrapper">
+            <input type="text" id="studentSearchInput" placeholder="Enter Faculty ID (e.g., FAC-001)">
+            
+            <select id="studentSearchDay">
+                <option value="all">-- All Days --</option>
+                <option value="Monday">Monday</option>
+                <option value="Tuesday">Tuesday</option>
+                <option value="Wednesday">Wednesday</option>
+                <option value="Thursday">Thursday</option>
+                <option value="Friday">Friday</option>
+                <option value="Saturday">Saturday</option>
+            </select>
+
+            <select id="studentSearchTime">
+                <option value="all">-- All Periods / Times --</option>
+                <option value="1">Period I (10:00 - 10:50)</option>
+                <option value="2">Period II (10:50 - 11:40)</option>
+                <option value="3">Period III (11:40 - 12:30)</option>
+                <option value="4">Period IV (12:30 - 1:20)</option>
+                <option value="5">Period V (2:20 - 3:10)</option>
+                <option value="6">Period VI (3:10 - 4:00)</option>
+                <option value="7">Period VII (4:00 - 4:50)</option>
+            </select>
+            
+            <button class="login-btn search-btn" style="flex: 0.5; min-width: 100px;" onclick="studentSearchFaculty()">SEARCH</button>
+        </div>
+    </div>
+
+    <div id="studentFacultyResult" class="faculty-result">
+        <h4 id="studentFacultyName" style="text-align:center; color:#333; margin-bottom: 10px;"></h4>
+        <table id="studentFacultySearchTable">
+            <thead>
+                <tr>
+                    <th>Day</th>
+                    <th>I (10:00-10:50)</th>
+                    <th>II (10:50-11:40)</th>
+                    <th>III (11:40-12:30)</th>
+                    <th>IV (12:30-1:20)</th>
+                    <th>V (2:20-3:10)</th>
+                    <th>VI (3:10-4:00)</th>
+                    <th>VII (4:00-4:50)</th>
+                </tr>
+            </thead>
+            <tbody id="studentFacultyTableBody"></tbody>
+        </table>
+    </div>
+
+    <div style="text-align: center; margin-top: 40px;">
+        <button class="login-btn back-btn" style="max-width: 200px;" onclick="goToStep(1)">LOGOUT</button>
+    </div>
+</div>
+
+<div id="facultyDashboard" class="page-step">
+    <div class="timetable-box" style="display:block; margin-top:30px;">
+        <h2 style="color:#ff8c00; text-align:center; margin-bottom: 10px;">Faculty Portal</h2>
+        
+        <div class="form-group search-wrapper">
+            <input type="text" id="facultyOwnSearchInput" placeholder="Enter Your ID (e.g., FAC-001)">
+            <button class="login-btn search-btn" onclick="loadFacultyTimetable()">LOAD MY TIMETABLE</button>
+        </div>
+
+        <div id="facultyEditableArea" class="faculty-result" style="border-color:#ff8c00;">
+            <h4 id="facultyOwnName" style="text-align:center; color:#333; margin-bottom: 10px;"></h4>
+            
+            <table id="facultyEditableTable">
+                <thead>
+                    <tr>
+                        <th>Day</th>
+                        <th>I (10:00-10:50)</th>
+                        <th>II (10:50-11:40)</th>
+                        <th>III (11:40-12:30)</th>
+                        <th>IV (12:30-1:20)</th>
+                        <th>V (2:20-3:10)</th>
+                        <th>VI (3:10-4:00)</th>
+                        <th>VII (4:00-4:50)</th>
+                    </tr>
+                </thead>
+                <tbody id="facultyOwnTableBody"></tbody>
+            </table>
+
+            <div style="margin-top: 25px; background: #fff5e6; padding: 20px; border-radius: 8px; border: 1px solid #ffcc80;">
+                <h4 style="color:#e65100; margin-bottom:15px; text-align:center;">Mark Period as Absent / Leave</h4>
+                <div style="display:flex; gap:15px; flex-wrap:wrap; justify-content:center; align-items:center;">
+                    <select id="leaveDay" style="padding:10px; border:1px solid #ccc; border-radius:4px;">
+                        <option value="Monday">Monday</option>
+                        <option value="Tuesday">Tuesday</option>
+                        <option value="Wednesday">Wednesday</option>
+                        <option value="Thursday">Thursday</option>
+                        <option value="Friday">Friday</option>
+                        <option value="Saturday">Saturday</option>
+                    </select>
+                    
+                    <select id="leavePeriod" style="padding:10px; border:1px solid #ccc; border-radius:4px;">
+                        <option value="1">Period I</option>
+                        <option value="2">Period II</option>
+                        <option value="3">Period III</option>
+                        <option value="4">Period IV</option>
+                        <option value="5">Period V</option>
+                        <option value="6">Period VI</option>
+                        <option value="7">Period VII</option>
+                    </select>
+                    <button class="login-btn" style="background:#d32f2f; max-width:200px;" onclick="markAbsent()">UPDATE STATUS</button>
+                </div>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 40px;">
+            <button class="login-btn back-btn" style="max-width: 200px;" onclick="goToStep(1)">LOGOUT</button>
+        </div>
+    </div>
+</div>
+
+<div class="footer">
+    Copyright © All rights reserved by JNTUH College of Engineering Sultanpur.
+</div>
+
+<script>
+    // --- Timetable Database based on user selections ---
+    const studentTimetables = {
+        "CSE-2nd Year": `
+            <tr>
+                <th>DAY/TIME</th>
+                <th>I - Period<br>10:00 to 10:50</th>
+                <th>II - Period<br>10:50 to 11:40</th>
+                <th>III - Period<br>11:40 to 12:30</th>
+                <th>IV - Period<br>12:30 to 1:20</th>
+                <th>BREAK<br>1:20 to 2:20</th>
+                <th>V - Period<br>2:20 to 3:10</th>
+                <th>VI - Period<br>3:10 to 4:00</th>
+                <th>VII - Period<br>4:00 to 4:50</th>
+            </tr>
+            <tr>
+                <td><strong>MONDAY</strong></td>
+                <td>OS</td>
+                <td>DM</td>
+                <td colspan="2">NODE JS LAB</td>
+                <td rowspan="6" class="break-col">L<br><br>U<br><br>N<br><br>C<br><br>H</td>
+                <td colspan="2">BEFA</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td><strong>TUESDAY</strong></td>
+                <td>DM</td>
+                <td>OS</td>
+                <td>SEMINAR</td>
+                <td>DBMS</td>
+                <td colspan="2">OS LAB</td>
+                <td>LIBRARY</td>
+            </tr>
+            <tr>
+                <td><strong>WEDNESDAY</strong></td>
+                <td>DBMS</td>
+                <td>SEMINAR</td>
+                <td>SEMINAR</td>
+                <td>SEMINAR</td>
+                <td colspan="2">DBMS LAB</td>
+                <td>LIBRARY</td>
+            </tr>
+            <tr>
+                <td><strong>THURSDAY</strong></td>
+                <td>DBMS</td>
+                <td>OS</td>
+                <td>SE</td>
+                <td>DM</td>
+                <td colspan="2">COI</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td><strong>FRIDAY</strong></td>
+                <td colspan="3">RTRP LAB</td>
+                <td></td>
+                <td colspan="2">SE</td>
+                <td>LIBRARY</td>
+            </tr>
+            <tr>
+                <td><strong>SATURDAY</strong></td>
+                <td colspan="4"></td>
+                <td colspan="3"></td>
+            </tr>
+        `,
+        "ECE-2nd Year": `
+            <tr>
+                <th>Day / Time</th>
+                <th>I - Period<br>10:00 to 10:50</th>
+                <th>II - Period<br>10:50 to 11:40</th>
+                <th>III - Period<br>11:40 to 12:30</th>
+                <th>IV - Period<br>12:30 to 1:20</th>
+                <th>BREAK<br>1:20 to 2:20</th>
+                <th>V - Period<br>2:20 to 3:10</th>
+                <th>VI - Period<br>3:10 to 4:00</th>
+                <th>VII - Period<br>4:00 to 4:50</th>
+            </tr>
+            <tr>
+                <td><strong>Monday</strong></td>
+                <td>ECA</td>
+                <td colspan="2">LDICA</td>
+                <td>EMTL</td>
+                <td rowspan="6" class="break-col">LUNCH<br>BREAK</td>
+                <td colspan="2">RTP/FBP</td>
+                <td>LIBRARY</td>
+            </tr>
+            <tr>
+                <td><strong>Tuesday</strong></td>
+                <td>EMTL</td>
+                <td>ECA</td>
+                <td>LIBRARY</td>
+                <td>PTSP</td>
+                <td colspan="2">A&DC LAB (B I) / LDICA LAB (B II)</td>
+                <td>LIBRARY</td>
+            </tr>
+            <tr>
+                <td><strong>Wednesday</strong></td>
+                <td colspan="2">LDICA LAB (B I) / ECA LAB (B II)</td>
+                <td>LDICA</td>
+                <td>A & DC</td>
+                <td colspan="2">RTP/FBP</td>
+                <td>LIBRARY</td>
+            </tr>
+            <tr>
+                <td><strong>Thursday</strong></td>
+                <td>PTSP</td>
+                <td>ECA</td>
+                <td colspan="2">A & DC</td>
+                <td colspan="2">LIBRARY</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td><strong>Friday</strong></td>
+                <td>EMTL</td>
+                <td>PTSP</td>
+                <td colspan="2">LIBRARY</td>
+                <td colspan="2">ECA LAB (B I) / A&DC LAB (B II)</td>
+                <td>LIBRARY</td>
+            </tr>
+            <tr>
+                <td><strong>Saturday</strong></td>
+                <td></td>
+                <td colspan="3">LIBRARY</td>
+                <td colspan="2">GS LAB</td>
+                <td>LIBRARY</td>
+            </tr>
+        `,
+        "CSM-2nd Year": `
+            <tr>
+                <th>DAY/TIME</th>
+                <th>I - Period<br>10:00 to 10:50</th>
+                <th>II - Period<br>10:50 to 11:40</th>
+                <th>III - Period<br>11:40 to 12:30</th>
+                <th>IV - Period<br>12:30 to 1:20</th>
+                <th>BREAK<br>1:20 to 2:20</th>
+                <th>V - Period<br>2:20 to 3:10</th>
+                <th>VI - Period<br>3:10 to 4:00</th>
+                <th>VII - Period<br>4:00 to 4:50</th>
+            </tr>
+            <tr>
+                <td><strong>MONDAY</strong></td>
+                <td colspan="2">OOP-JAVA</td>
+                <td></td>
+                <td>ATCD</td>
+                <td rowspan="6" class="break-col">L<br><br>U<br><br>N<br><br>C<br><br>H</td>
+                <td>DM</td>
+                <td colspan="2">OOP-JAVA LAB</td>
+            </tr>
+            <tr>
+                <td><strong>TUESDAY</strong></td>
+                <td>ATCD</td>
+                <td>DBMS</td>
+                <td>IAI</td>
+                <td>SEMINAR</td>
+                <td>DM</td>
+                <td colspan="2">LIBRARY</td>
+            </tr>
+            <tr>
+                <td><strong>WEDNESDAY</strong></td>
+                <td>IAI</td>
+                <td>SEMINAR</td>
+                <td>DBMS</td>
+                <td>ATCD</td>
+                <td>DM</td>
+                <td colspan="2">LIBRARY</td>
+            </tr>
+            <tr>
+                <td><strong>THURSDAY</strong></td>
+                <td colspan="2">PROLOG LAB</td>
+                <td>IAI</td>
+                <td>DBMS</td>
+                <td colspan="2">DBMS LAB</td>
+                <td>LIBRARY</td>
+            </tr>
+            <tr>
+                <td><strong>FRIDAY</strong></td>
+                <td colspan="3">RTRP LAB</td>
+                <td></td>
+                <td colspan="2">GS LAB</td>
+                <td>LIBRARY</td>
+            </tr>
+            <tr>
+                <td><strong>SATURDAY</strong></td>
+                <td colspan="4"></td>
+                <td colspan="3"></td>
+            </tr>
+        `,
+        "CSC-2nd Year": `
+            <tr>
+                <th>DAY/TIME</th>
+                <th>I - Period<br>10:00 to 10:50</th>
+                <th>II - Period<br>10:50 to 11:40</th>
+                <th>III - Period<br>11:40 to 12:30</th>
+                <th>IV - Period<br>12:30 to 1:20</th>
+                <th>BREAK<br>1:20 to 2:20</th>
+                <th>V - Period<br>2:20 to 3:10</th>
+                <th>VI - Period<br>3:10 to 4:00</th>
+                <th>VII - Period<br>4:00 to 4:50</th>
+            </tr>
+            <tr>
+                <td><strong>MONDAY</strong></td>
+                <td colspan="3">RTRP LAB</td>
+                <td></td>
+                <td rowspan="6" class="break-col">L<br><br>U<br><br>N<br><br>C<br><br>H</td>
+                <td></td>
+                <td colspan="2">LIBRARY</td>
+            </tr>
+            <tr>
+                <td><strong>TUESDAY</strong></td>
+                <td>SE</td>
+                <td colspan="2">CN</td>
+                <td></td>
+                <td colspan="2">CN LAB</td>
+                <td>LIBRARY</td>
+            </tr>
+            <tr>
+                <td><strong>WEDNESDAY</strong></td>
+                <td colspan="2">NODE JS LAB</td>
+                <td colspan="2">DM</td>
+                <td colspan="2">SE</td>
+                <td>LIBRARY</td>
+            </tr>
+            <tr>
+                <td><strong>THURSDAY</strong></td>
+                <td colspan="2">DM</td>
+                <td colspan="2">OS</td>
+                <td></td>
+                <td colspan="2">BEFA</td>
+            </tr>
+            <tr>
+                <td><strong>FRIDAY</strong></td>
+                <td colspan="2">OS LAB</td>
+                <td colspan="2">SEMINAR</td>
+                <td></td>
+                <td colspan="2">COI</td>
+            </tr>
+            <tr>
+                <td><strong>SATURDAY</strong></td>
+                <td colspan="4"></td>
+                <td colspan="3"></td>
+            </tr>
+        `
+    };
+
+    // --- Faculty Mock Database ---
+    const facultyDatabase = {
+        "FAC-001": `
+            <tr><td>Monday</td><td>CSE-2nd Yr</td><td class="free-period">Free</td><td class="free-period">Free</td><td>MEC-3rd Yr</td><td class="free-period">Free</td><td class="free-period">Free</td><td class="free-period">Free</td></tr>
+            <tr><td>Tuesday</td><td class="free-period">Free</td><td>CIV-1st Yr</td><td>CSE-2nd Yr</td><td class="free-period">Free</td><td>CSE-2nd Yr Lab</td><td>CSE-2nd Yr Lab</td><td class="free-period">Free</td></tr>
+            <tr><td>Wednesday</td><td class="free-period">Free</td><td class="free-period">Free</td><td class="free-period">Free</td><td class="free-period">Free</td><td class="free-period">Free</td><td class="free-period">Free</td><td class="free-period">Free</td></tr>
+            <tr><td>Thursday</td><td class="free-period">Free</td><td class="free-period">Free</td><td class="free-period">Free</td><td class="free-period">Free</td><td class="free-period">Free</td><td class="free-period">Free</td><td class="free-period">Free</td></tr>
+            <tr><td>Friday</td><td class="free-period">Free</td><td class="free-period">Free</td><td class="free-period">Free</td><td class="free-period">Free</td><td class="free-period">Free</td><td class="free-period">Free</td><td class="free-period">Free</td></tr>
+        `,
+        "FAC-002": `
+            <tr><td>Monday</td><td class="free-period">Free</td><td>ECE-4th Yr</td><td>ECE-4th Yr</td><td class="free-period">Free</td><td>ECE-1st Yr</td><td class="free-period">Free</td><td class="free-period">Free</td></tr>
+            <tr><td>Tuesday</td><td>ECE-2nd Yr</td><td>ECE-2nd Yr</td><td class="free-period">Free</td><td>CSE-1st Yr</td><td class="free-period">Free</td><td class="free-period">Free</td><td class="free-period">Free</td></tr>
+        `
+    };
+
+    // --- General Navigation ---
+    function goToStep(stepNumber) {
+        document.querySelectorAll('.page-step').forEach(step => {
+            step.classList.remove('active-step');
+            step.style.display = 'none';
+        });
+        
+        document.getElementById('studentTimetableSection').style.display = 'none';
+        document.getElementById('studentFacultyResult').style.display = 'none';
+
+        const nextStep = document.getElementById('step' + stepNumber);
+        if(nextStep) {
+            nextStep.style.display = 'flex';
+            nextStep.classList.add('active-step');
+        }
+    }
+
+    // --- Student Logic ---
+    function viewTimetable() {
+        const branch = document.getElementById('branch').value;
+        const year = document.getElementById('year').value;
+        
+        if(year === "" || branch === "") { 
+            alert("Please complete all selections (Branch and Year)."); 
+            return; 
+        }
+
+        document.querySelectorAll('.page-step').forEach(step => step.style.display = 'none');
+        
+        document.getElementById('timetableTitle').innerText = branch + " - " + year + " Timetable";
+        
+        const timetableKey = branch + "-" + year;
+        const tableElement = document.getElementById('dynamicTimetable');
+        
+        if (studentTimetables[timetableKey]) {
+            tableElement.innerHTML = studentTimetables[timetableKey];
+        } else {
+            tableElement.innerHTML = "<tr><th>Notice</th></tr><tr><td style='padding: 40px; color: #d32f2f;'>The timetable for " + branch + " " + year + " has not been uploaded to the system yet.</td></tr>";
+        }
+
+        document.getElementById('studentTimetableSection').style.display = 'block';
+    }
+
+    // UPDATED Student Search Logic with Day Filtering & Time Highlighting
+    function studentSearchFaculty() {
+        const query = document.getElementById('studentSearchInput').value.trim().toUpperCase();
+        const dayFilter = document.getElementById('studentSearchDay').value;
+        const timeFilter = document.getElementById('studentSearchTime').value; 
+        
+        if(query === "") return;
+
+        const tableBody = document.getElementById('studentFacultyTableBody');
+        
+        // Build the header text to show active filters
+        let headerText = "Availability: " + query;
+        let filtersApplied = [];
+        if(dayFilter !== "all") filtersApplied.push(dayFilter);
+        if(timeFilter !== "all") {
+            const periodText = document.getElementById('studentSearchTime').options[document.getElementById('studentSearchTime').selectedIndex].text;
+            filtersApplied.push(periodText);
+        }
+        if(filtersApplied.length > 0) {
+            headerText += " (Filtered by " + filtersApplied.join(", ") + ")";
+        }
+        
+        document.getElementById('studentFacultyName').innerText = headerText;
+
+        // Load the data
+        tableBody.innerHTML = facultyDatabase[query] || "<tr><td colspan='8'>No data found for " + query + "</td></tr>";
+        
+        const resultTable = document.getElementById('studentFacultySearchTable');
+        
+        // 1. Clear any old highlights first
+        const allCells = resultTable.querySelectorAll('th, td');
+        allCells.forEach(cell => cell.classList.remove('highlight-col'));
+
+        // 2. Add new highlights if a specific period is chosen
+        if (timeFilter !== "all" && facultyDatabase[query]) {
+            const colIndex = parseInt(timeFilter); // 1 to 7
+            
+            // Highlight the header
+            const headers = resultTable.querySelectorAll('thead th');
+            if(headers.length > colIndex) {
+                headers[colIndex].classList.add('highlight-col');
+            }
+            
+            // Highlight the cells in that column for every row
+            const rows = tableBody.querySelectorAll('tr');
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if(cells.length > colIndex) {
+                    cells[colIndex].classList.add('highlight-col');
+                }
+            });
+        }
+        
+        // 3. Filter by Day (Hide rows that don't match)
+        if (dayFilter !== "all" && facultyDatabase[query]) {
+            const rows = tableBody.querySelectorAll('tr');
+            let anyVisible = false;
+            rows.forEach(row => {
+                const firstCell = row.querySelector('td');
+                if(firstCell) {
+                    if(firstCell.innerText.trim().toUpperCase() !== dayFilter.toUpperCase()) {
+                        row.style.display = 'none'; // Hide it
+                    } else {
+                        row.style.display = ''; // Show it
+                        anyVisible = true;
+                    }
+                }
+            });
+            
+            // If filtering hides everything, show a notice
+            if(!anyVisible) {
+                tableBody.innerHTML += "<tr><td colspan='8' style='color:#d32f2f; padding:20px;'>No schedule data uploaded for " + dayFilter + " for this faculty member yet.</td></tr>";
+            }
+        }
+
+        document.getElementById('studentFacultyResult').style.display = 'block';
+    }
+
+    // --- Faculty Logic ---
+    function facultyLogin() {
+        const facId = document.getElementById('facLoginId').value.trim().toUpperCase();
+        if(facId === "") { alert("Enter ID"); return; }
+        
+        goToStep('None'); 
+        
+        const dashboard = document.getElementById('facultyDashboard');
+        dashboard.style.display = 'flex';
+        dashboard.classList.add('active-step');
+        
+        document.getElementById('facultyOwnSearchInput').value = facId;
+        document.getElementById('facultyEditableArea').style.display = 'none';
+        
+        loadFacultyTimetable(); 
+    }
+
+    function loadFacultyTimetable() {
+        const facId = document.getElementById('facultyOwnSearchInput').value.trim().toUpperCase();
+        if(facId === "") return;
+
+        const tableBody = document.getElementById('facultyOwnTableBody');
+        document.getElementById('facultyOwnName').innerText = "Editing Schedule: " + facId;
+        
+        if(!facultyDatabase[facId]) {
+            facultyDatabase[facId] = `
+                <tr><td>Monday</td><td>Class</td><td>Class</td><td class="free-period">Free</td><td>Lab</td><td class="free-period">Free</td><td>Class</td><td class="free-period">Free</td></tr>
+                <tr><td>Tuesday</td><td class="free-period">Free</td><td>Class</td><td>Lab</td><td class="free-period">Free</td><td class="free-period">Free</td><td>Class</td><td class="free-period">Free</td></tr>
+                <tr><td>Wednesday</td><td class="free-period">Free</td><td class="free-period">Free</td><td class="free-period">Free</td><td class="free-period">Free</td><td class="free-period">Free</td><td class="free-period">Free</td><td class="free-period">Free</td></tr>
+            `;
+        }
+
+        tableBody.innerHTML = facultyDatabase[facId];
+        document.getElementById('facultyEditableArea').style.display = 'block';
+    }
+
+    function markAbsent() {
+        const facId = document.getElementById('facultyOwnSearchInput').value.trim().toUpperCase();
+        const day = document.getElementById('leaveDay').value;
+        const periodIndex = parseInt(document.getElementById('leavePeriod').value); 
+        
+        const tableBody = document.getElementById('facultyOwnTableBody');
+        const rows = tableBody.getElementsByTagName('tr');
+        let updated = false;
+
+        for (let i = 0; i < rows.length; i++) {
+            const cells = rows[i].getElementsByTagName('td');
+            if (cells.length > 0 && cells[0].innerText.trim() === day) {
+                if (cells.length > periodIndex) {
+                    cells[periodIndex].innerHTML = '<span class="absent-period">Absent</span>';
+                    facultyDatabase[facId] = tableBody.innerHTML;
+                    updated = true;
+                    alert("Successfully marked Period " + periodIndex + " on " + day + " as Absent.");
+                }
+                break;
+            }
+        }
+        
+        if (!updated) alert("Day not found in schedule (Add it manually to the mock database first).");
+    }
+</script>
+
+</body>
+</html>
